@@ -1,0 +1,42 @@
+# Nombre de nuestro flujo de trabajo
+name: Construir y Publicar en Docker Hub
+
+# ¿Cuándo se ejecuta?
+on:
+  push:
+    branches: [ "main" ]  # Se ejecuta al hacer push a la rama 'main'
+  pull_request:
+    branches: [ "main" ]  # También al crear un PR hacia 'main'
+
+# Un workflow se compone de uno o más jobs
+jobs:
+  # Este job se llama 'build-and-push'
+  build-and-push:
+    runs-on: ubuntu-latest  # El sistema operativo de la máquina virtual donde correrá
+
+    # Los pasos que ejecutará el job
+    steps:
+      # 1. Descargar el código del repositorio
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # 2. Iniciar sesión en Docker Hub usando nuestros secretos
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3. Configurar Docker Buildx (para construir imágenes más rápido y con más opciones)
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. Construir y publicar la imagen
+      - name: Construir y publicar imagen
+        uses: docker/build-push-action@v5
+        with:
+          context: .  # El contexto de construcción (la raíz del proyecto)
+          file: ./Dockerfile  # La ruta a tu Dockerfile
+          push: true  # Importante: 'true' para que la suba a Docker Hub
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/despliegue-continuo-miapp:latest  # Nombre de tu imagen en Docker Hub (cámbialo)
+          # Por ejemplo: tags: micuenta/mi-app:latest
