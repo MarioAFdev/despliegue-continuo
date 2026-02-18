@@ -1,0 +1,50 @@
+name: Construir y Publicar en Docker Hub
+
+# CORREGIDO: Define correctamente los eventos
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  # También puedes añadir manual trigger
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+      
+      - name: Verificar Dockerfile
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile encontrado en la raíz"
+            echo "Contenido del directorio:"
+            ls -la
+          else
+            echo "❌ ERROR: No se encontró Dockerfile en la raíz"
+            exit 1
+          fi
+      
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Construir y publicar imagen
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # Dockerfile en la raíz, no necesitas especificar 'file' si está en la raíz
+          # pero lo dejamos explícito para claridad
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/despliegue-continuo-miweb:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/despliegue-continuo-miweb:${{ github.sha }}
